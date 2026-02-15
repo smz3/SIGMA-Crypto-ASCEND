@@ -1,1 +1,14 @@
-# binance_config.yaml configuration
+# Binance Fetcher Configuration
+exchange: binance
+symbol: BTC/USDT
+timeframes:
+  - 1M
+  - 1w
+  - 1d
+  - 4h
+  - 1h
+  - 30m
+storage:
+  raw_dir: data/raw
+  format: parquet
+fetch_limit: 1000

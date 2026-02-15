@@ -1,1 +1,21 @@
-# defaults.yaml configuration
+# Detection parameters — maps directly from TradingParameters.mqh
+detection:
+  swing_window: 3           # InpSwingWindow
+  swing_lookback: 20        # InpSwingLookback (live mode)
+  max_breakout_age: 0       # InpMaxBreakoutAge (0 = no limit)
+  historical_bars: 5000     # InpHistoricalBars
+  min_age_bars: 8           # InpQuantMinAgeBars
+  max_zone_age_bars: 5000   # InpMaxZoneAgeBars
+
+# Timeframe configuration
+timeframes:
+  narrative: ["MN1", "W1", "D1"]
+  control: ["H4", "H1", "M30"]
+  sniper: ["M15", "M5", "M1"]
+
+# Backtesting defaults
+backtest:
+  starting_balance: 100000
+  base_risk_pct: 1.0
+  max_positions: 200
+  target_r: 1.5
