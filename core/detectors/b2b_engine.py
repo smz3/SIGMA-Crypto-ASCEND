@@ -15,6 +15,7 @@ from core.models.structures import (
 def detect_b2b_zones(
     df: pd.DataFrame,
     swings: list[SwingPointInfo],
+    tf: str = "D1",
     config: DetectionConfig = None
 ) -> list[B2BZoneInfo]:
     """
@@ -181,30 +182,12 @@ def detect_b2b_zones(
         })
 
     # =========================================================================
-    # PASS 2: SELECT WINNERS (Freshest Pattern per P5 Anchor)
-    # =========================================================================
-    winners = []
-    p5_processed = set()
-    
-    # Sort candidates by confirmation time (P4) descending (freshest first)
-    candidates.sort(key=lambda x: x['p4_time'], reverse=True)
-    
-    for c in candidates:
-        p5_key = (c['p5'].time, c['direction'])
-        if p5_key in p5_processed:
-            continue
-        
-        # This candidate is the winner for this P5 anchor
-        winners.append(c)
-        p5_processed.add(p5_key)
-
-    # =========================================================================
-    # PASS 3: GENERATE B2B ZONE OBJECTS
+    # PASS 2: GENERATE B2B ZONE OBJECTS (NO GLOBAL SELECTION)
     # =========================================================================
     zones = []
-    for w in winners:
-        p1, p2, p3, p5 = w['p1'], w['p2'], w['p3'], w['p5']
-        direction = w['direction']
+    for c in candidates:
+        p1, p2, p3, p5 = c['p1'], c['p2'], c['p3'], c['p5']
+        direction = c['direction']
         
         # Calculate L2 (The Stop level)
         l2_price = max(p1.price, p3.price) if direction == SignalDirection.BEARISH else min(p1.price, p3.price)
@@ -214,8 +197,8 @@ def detect_b2b_zones(
         l1_price = p2.price
         
         zone = B2BZoneInfo(
-            zone_id=generate_zone_id(l1_price, l2_price, "D1", direction, l2_time),
-            timeframe="D1",
+            zone_id=generate_zone_id(l1_price, l2_price, tf, direction, l2_time),
+            timeframe=tf,
             direction=direction,
             L1_price=l1_price,
             L2_price=l2_price,
@@ -226,8 +209,8 @@ def detect_b2b_zones(
             second_barrier_time=p5.time,
             swing_between_price=l2_price,
             swing_between_time=l2_time,
-            zone_created_time=w['p4_time'],
-            created_bar_index=w['p4_idx']
+            zone_created_time=c['p4_time'],
+            created_bar_index=c['p4_idx']
         )
         zones.append(zone)
 

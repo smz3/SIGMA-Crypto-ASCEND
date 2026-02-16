@@ -12,6 +12,12 @@ class SymbolParams:
     sl_buffer: float       # Absolute price distance (e.g. 200.0 for BTC, 4.0 for Gold)
     min_rr: float = 2.0    # Minimum Risk:Reward required
     
+    # Trade Management (BTCUSDT Futures Logic)
+    be_activation: float = 0.0 # Points profit to trigger BE
+    be_lockin: float = 0.0     # Points profit to lock in
+    trail_activation: float = 0.0 # Points profit to start trailing
+    trail_distance: float = 0.0   # Distance to trail behind price
+
 class RiskCalculator:
     """
     The SHIELD.
@@ -20,13 +26,20 @@ class RiskCalculator:
     Now handles:
     1. Position Sizing
     2. Structural Buffer Management (Stop Loss Sizing)
+    3. Trade Management Parameters
     """
     
     def __init__(self, config: RiskConfig):
         self.cfg = config
         # Symbol Specific definitions (Centralized Risk Parameters)
         self.symbols: Dict[str, SymbolParams] = {
-            'BTCUSDT': SymbolParams(sl_buffer=200.0), 
+            'BTCUSDT': SymbolParams(
+                sl_buffer=200.0,
+                be_activation=1500.0,
+                be_lockin=150.0,
+                trail_activation=2500.0,
+                trail_distance=1200.0
+            ), 
             'XAUUSD': SymbolParams(sl_buffer=4.0),    
         }
         
@@ -67,3 +80,21 @@ class RiskCalculator:
         if price_diff == 0: return 0.0
         size = risk_amount / price_diff
         return size
+
+    def check_exposure(self, current_trades: list, daily_pnl_pct: float = 0.0) -> bool:
+        """
+        V6.0 RISK GOVERNOR: The Shield.
+        Returns False if risk limits are exceeded.
+        """
+        # 1. Hard Cap (Concurrency)
+        # V5.9.1 Diagnosis revealed 123 concurrent trades caused -99% DD.
+        # We cap at 10 to prevent "Consensus Overload".
+        MAX_CONCURRENT_TRADES = 10 
+        
+        if len(current_trades) >= MAX_CONCURRENT_TRADES:
+            return False
+            
+        # 2. Daily Circuit Breaker (Future expansion)
+        # if daily_pnl_pct <= -0.06: return False
+        
+        return True

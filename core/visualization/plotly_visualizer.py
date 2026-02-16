@@ -53,7 +53,7 @@ class ChartVisualizer:
                 x=buys['open_time'], 
                 y=buys['entry_price'],
                 mode='markers',
-                marker=dict(symbol='triangle-up', size=10, color='green'),
+                marker=dict(symbol='triangle-up', size=5, color='green'),
                 name='Buy Entry'
             ), row=1, col=1)
             
@@ -63,20 +63,39 @@ class ChartVisualizer:
                 x=sells['open_time'], 
                 y=sells['entry_price'],
                 mode='markers',
-                marker=dict(symbol='triangle-down', size=10, color='red'),
+                marker=dict(symbol='triangle-down', size=5, color='red'),
                 name='Sell Entry'
             ), row=1, col=1)
 
             # 3. Plot Exits
             trades['close_time'] = pd.to_datetime(trades['close_time'])
             
+            # --- NEW: Plot Connecting Lines ---
+            # For performance, we add separate traces for each category
+            for direction, color in [('BULLISH', 'rgba(0,255,0,0.2)'), ('BEARISH', 'rgba(255,0,0,0.2)')]:
+                df_dir = trades[trades['direction'] == direction]
+                x_lines = []
+                y_lines = []
+                for _, t in df_dir.iterrows():
+                    x_lines.extend([t['open_time'], t['close_time'], None])
+                    y_lines.extend([t['entry_price'], t['exit_price'], None])
+                
+                self.fig.add_trace(go.Scatter(
+                    x=x_lines, y=y_lines,
+                    mode='lines',
+                    line=dict(color=color, width=0.5), # Thinner lines
+                    hoverinfo='none',
+                    showlegend=False,
+                    name=f'{direction} Paths'
+                ), row=1, col=1)
+
             # Take Profits
             tps = trades[trades['reason'] == 'Take Profit']
             self.fig.add_trace(go.Scatter(
                 x=tps['close_time'],
                 y=tps['exit_price'],
                 mode='markers',
-                marker=dict(symbol='circle', size=8, color='blue', line=dict(width=1, color='white')),
+                marker=dict(symbol='circle', size=4, color='blue', line=dict(width=0.5, color='white')),
                 name='Take Profit'
             ), row=1, col=1)
 
@@ -86,7 +105,7 @@ class ChartVisualizer:
                 x=sls['close_time'],
                 y=sls['exit_price'],
                 mode='markers',
-                marker=dict(symbol='x', size=10, color='orange'),
+                marker=dict(symbol='x', size=5, color='orange'),
                 name='Stop Loss'
             ), row=1, col=1)
             

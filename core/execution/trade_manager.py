@@ -16,6 +16,7 @@ class Position:
     open_time: pd.Timestamp
     comment: str
     zone_id: int # Track which zone opened this
+    be_active: bool = False # Track if Break-Even was already triggered
 
 @dataclass
 class ClosedTrade:
@@ -28,7 +29,8 @@ class ClosedTrade:
     pnl: float
     open_time: pd.Timestamp
     close_time: pd.Timestamp
-    reason: str
+    reason: str        # Exit Reason (SL/TP)
+    entry_reason: str # Original Entry Reason (e.g. D1 Flow)
 
 class TradeManager:
     """
@@ -46,6 +48,11 @@ class TradeManager:
         
     def execute(self, signal: TradeSignal):
         """Simulate filling an order applying Risk Rules"""
+
+        # V6.0 RISK GOVERNOR CHECK
+        # Hard Cap on Concurrent Trades (Max 10 defined in Sizing)
+        if not self.risk.check_exposure(self.positions):
+            return 
         
         # 1. Calculate Risk Parameters (Size + Buffered SL)
         buffered_sl, size = self.risk.calculate_sl_and_size(
@@ -72,7 +79,8 @@ class TradeManager:
             size=size,
             open_time=signal.timestamp,
             comment=f"{signal.tf}#{signal.zone_id} {signal.reason}",
-            zone_id=signal.zone_id
+            zone_id=signal.zone_id,
+            be_active=False
         )
         self.positions.append(pos)
         self._ticket_counter += 1
@@ -87,6 +95,30 @@ class TradeManager:
             exit_price = 0.0
             reason = ""
             
+            # 0. Advanced Trade Management (BE + TS)
+            params = self.risk.symbols.get(pos.symbol)
+            if params:
+                # Calculate Profit in Points
+                profit_points = (current_price - pos.entry_price) if pos.direction == 'BULLISH' else (pos.entry_price - current_price)
+                
+                # A. Break-Even Implementation
+                if not pos.be_active and params.be_activation > 0 and profit_points >= params.be_activation:
+                   new_be_sl = pos.entry_price + params.be_lockin if pos.direction == 'BULLISH' else pos.entry_price - params.be_lockin
+                   pos.sl = new_be_sl
+                   pos.be_active = True
+                   # Note: We don't close here, just move the stop
+                
+                # B. Trailing Stop Implementation
+                if params.trail_activation > 0 and profit_points >= params.trail_activation:
+                   if pos.direction == 'BULLISH':
+                       new_trail_sl = current_price - params.trail_distance
+                       if new_trail_sl > pos.sl:
+                           pos.sl = new_trail_sl
+                   else: # BEARISH
+                       new_trail_sl = current_price + params.trail_distance
+                       if new_trail_sl < pos.sl:
+                           pos.sl = new_trail_sl
+
             # Check SL (Bullish) - Hits Low?
             if pos.direction == 'BULLISH' and low <= pos.sl:
                exit_price = pos.sl
@@ -97,7 +129,7 @@ class TradeManager:
                exit_price = pos.sl
                reason = "Stop Loss"
                closed = True
-               
+            
             # Check TP (Bullish) - Hits High?
             elif pos.tp > 0:
                 if pos.direction == 'BULLISH' and high >= pos.tp:
@@ -129,7 +161,8 @@ class TradeManager:
                     pnl=trade_pnl,
                     open_time=pos.open_time,
                     close_time=current_time,
-                    reason=reason
+                    reason=reason,
+                    entry_reason=pos.comment
                 ))
             else:
                 still_open.append(pos)
@@ -169,7 +202,8 @@ class TradeManager:
                 pnl=trade_pnl,
                 open_time=pos.open_time,
                 close_time=current_time,
-                reason="Forced Close (End of Sim)"
+                reason="Forced Close (End of Sim)",
+                entry_reason=pos.comment
             ))
         self.positions = []
         # Update final equity

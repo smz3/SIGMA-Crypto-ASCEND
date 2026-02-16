@@ -1,5 +1,0 @@
-SIGMA PHASE 4 TEARSHEET
-Executed: 2026-02-14 15:56:48.179018
-Total Trades: 12582
-Win Rate: 38.00%
-Net R: 1761.0

@@ -310,15 +310,15 @@ SIGMA-Crypto-ASCEND/
 
 ### SHOULD PORT (Day 3 — Confluence + Multi-TF)
 
-| MQL5 Source | Python Target | Status | Notes |
-|---|---|---|---|
-| `B2BConfluence.mqh` | `core/detectors/confluence.py` | ⬜ TODO | Parent-child zone hierarchy |
-| `B2BZoneManager.mqh` | `core/detectors/zone_manager.py` | ⬜ TODO | Dedup, pruning, consolidation |
-| `TimeFrameManager.mqh` | `core/system/timeframe_mgr.py` | ⬜ TODO | Multi-TF data orchestration |
+| MQL5 Source           | Python Target                     | Status     | Notes |
+|---                    |---                                |---          |---    |
+| `B2BConfluence.mqh`   | `core/detectors/confluence.py`    | ✅ Done    | Parent-child zone hierarchy   |
+| `B2BZoneManager.mqh`  | `core/detectors/zone_manager.py`  | ✅ Done    | Dedup, pruning, consolidation |
+| `TimeFrameManager.mqh`| `core/system/timeframe_mgr.py`    | ✅ Done    | Multi-TF data orchestration   |
 
 ### NOT PORTING (MT5-Specific / Simplified in Python)
 
-| MQL5 Source | Reason | How It's Handled in Python |
+| MQL5 Source           | Reason | How It's Handled in Python |
 |---|---|---|
 | `StrategyOrchestrator.mqh` | Complex narrative logic (789+ lines) | Simplified: `vectorized_backtester.py` uses zone touches directly. Full port is a future iteration. |
 | `TradeSignalGenerator.mqh` | Single-pass zone scanner | Simplified: backtester scans zones sequentially, no tick-by-tick evaluation |
@@ -513,6 +513,6 @@ Test categories:
 |---|---|---|
 | Day 1 | Core Detection Pipeline | ✅ Complete |
 | Day 2 | Data Fetcher + Backtester + Supabase Push | 🔄 In Progress |
-| Day 3 | Confluence + Multi-TF + Verification Notebook | ⬜ TODO |
+| Day 3 | Confluence + Multi-TF + Verification Notebook | ✅ Complete |
 | Day 4 | Live Signal Engine + Paper Trading Demo | ⬜ TODO |
 | Day 5 | Research Documentation + Failure Modes + Regime Analysis | ⬜ TODO |

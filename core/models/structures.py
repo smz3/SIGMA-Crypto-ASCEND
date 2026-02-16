@@ -132,23 +132,54 @@ def generate_zone_id(L1: float, L2: float, tf: str, direction: SignalDirection, 
 class FlowState:
     """
     Snapshot of the Narrative Flow for a specific timeframe.
+    Port of MQL5 FlowState struct.
     """
-    origin_id: int = 0
+    origin_id: str = "" # zone_id is string (hex) in Python
     origin_dir: SignalDirection = SignalDirection.NONE
-    origin_touch_time: datetime = pd.Timestamp.min # Fixed: Use pd.Timestamp.min or simplified logic
+    origin_touch_time: pd.Timestamp = pd.Timestamp.min
+    details_origin_price: float = 0.0
+    details_origin_L2: float = 0.0
     
-    magnet_id: int = 0
+    magnet_id: str = ""
+    magnet_dir: SignalDirection = SignalDirection.NONE
+    details_magnet_price: float = 0.0
     details_magnet_L2: float = 0.0
     magnet_fifty_touched: bool = False
     magnet_L2_touched: bool = False
+    is_magnet_extreme: bool = False # V5.8
     
-    outpost_id: int = 0
-    outpost_touch_time: datetime = pd.Timestamp.min
+    outpost_id: str = ""
+    outpost_touch_time: pd.Timestamp = pd.Timestamp.min
+    details_outpost_price: float = 0.0
     
-    anchor_is_traded: bool = False
+    roadblock_id: str = ""
+    anchor_is_traded: bool = False # V5.7: Safety Trigger
+    is_siege_active: bool = False # V5.5
     is_valid: bool = False
-    is_siege_active: bool = False
-    roadblock_id: int = 0
+    last_update_time: pd.Timestamp = pd.Timestamp.min
+
+    def reset(self):
+        """Resets the state to initial values."""
+        self.origin_id = ""
+        self.origin_dir = SignalDirection.NONE
+        self.origin_touch_time = pd.Timestamp.min
+        self.details_origin_price = 0.0
+        self.details_origin_L2 = 0.0
+        self.magnet_id = ""
+        self.magnet_dir = SignalDirection.NONE
+        self.details_magnet_price = 0.0
+        self.details_magnet_L2 = 0.0
+        self.magnet_fifty_touched = False
+        self.magnet_L2_touched = False
+        self.is_magnet_extreme = False
+        self.outpost_id = ""
+        self.outpost_touch_time = pd.Timestamp.min
+        self.details_outpost_price = 0.0
+        self.roadblock_id = ""
+        self.anchor_is_traded = False
+        self.is_siege_active = False
+        self.is_valid = False
+        self.last_update_time = pd.Timestamp.min
 
 
 @dataclass

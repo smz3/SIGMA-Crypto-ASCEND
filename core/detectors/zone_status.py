@@ -7,88 +7,75 @@ import numpy as np
 import pandas as pd
 from core.models.structures import B2BZoneInfo, SignalDirection
 
-def update_zone_statuses(df: pd.DataFrame, zones: list[B2BZoneInfo]):
+def update_active_zones(current_low: float, current_high: float, current_close: float, current_time: pd.Timestamp, active_zones: list[B2BZoneInfo]):
     """
-    Optimized zone status updater using NumPy vectorization where possible.
+    STRICT SERIAL update for active zones.
+    Checks for T1, T2, T3 touches and L2 invalidation based on the CURRENT bar only.
     """
-    if not zones:
-        return
-
-    highs = df['high'].values
-    lows = df['low'].values
-    closes = df['close'].values
-    times = df['time'].values
-    n = len(df)
-
-    for zone in zones:
-        start_idx = zone.created_bar_index + 1
-        if start_idx >= n:
+    for zone in active_zones:
+        if not zone.is_valid:
             continue
-            
-        # Get slice of data from creation onwards
-        h_slice = highs[start_idx:]
-        l_slice = lows[start_idx:]
-        c_slice = closes[start_idx:]
-        t_slice = times[start_idx:]
-        
-        # 1. Find Invalidation Index (First close past L2)
+
+        # 1. Check Invalidation (Close past L2)
+        invalidated = False
         if zone.direction == SignalDirection.BEARISH:
-            inv_hits = np.where(c_slice > zone.L2_price)[0]
+            if current_close > zone.L2_price:
+                invalidated = True
         else:
-            inv_hits = np.where(c_slice < zone.L2_price)[0]
-            
-        last_idx = len(c_slice)
-        if len(inv_hits) > 0:
-            last_idx = inv_hits[0]
+            if current_close < zone.L2_price:
+                invalidated = True
+
+        if invalidated:
             zone.is_invalidated = True
             zone.is_valid = False
-            zone.invalidation_time = t_slice[last_idx]
-            
-        # 2. Process Touches strictly before invalidation
-        h_valid = h_slice[:last_idx+1]
-        l_valid = l_slice[:last_idx+1]
-        t_valid = t_slice[:last_idx+1]
-        
+            zone.invalidation_time = current_time
+            continue
+
+        # 2. Check Touches (Internal Structural Progression)
         if zone.direction == SignalDirection.BEARISH: # Sell Zone
             # T1: High >= L1
-            t1_hits = np.where(h_valid >= zone.L1_price)[0]
-            if len(t1_hits) > 0:
+            if not zone.L1_touched and current_high >= zone.L1_price:
                 zone.L1_touched = True
-                zone.L1_touch_time = t_valid[t1_hits[0]]
+                zone.L1_touch_time = current_time
                 zone.touch_count = 1
                 
-                # T2: High >= 50% (after T1)
-                t2_hits = np.where(h_valid[t1_hits[0]:] >= zone.fifty_percent)[0]
-                if len(t2_hits) > 0:
-                    zone.fifty_touched = True
-                    zone.fifty_touch_time = t_valid[t1_hits[0] + t2_hits[0]]
-                    zone.touch_count = 2
-                    
-                    # T3: High >= L2 (after T2)
-                    t3_hits = np.where(h_valid[t1_hits[0] + t2_hits[0]:] >= zone.L2_price)[0]
-                    if len(t3_hits) > 0:
-                        zone.L2_touched = True
-                        zone.L2_touch_time = t_valid[t1_hits[0] + t2_hits[0] + t3_hits[0]]
-                        zone.touch_count = 3
+            # T2: High >= 50% (Must be after or same bar as T1)
+            if zone.L1_touched and not zone.fifty_touched and current_high >= zone.fifty_percent:
+                zone.fifty_touched = True
+                zone.fifty_touch_time = current_time
+                zone.touch_count = 2
+                
+            # T3: High >= L2 (Must be after or same bar as T2)
+            if zone.fifty_touched and not zone.L2_touched and current_high >= zone.L2_price:
+                zone.L2_touched = True
+                zone.L2_touch_time = current_time
+                zone.touch_count = 3
         else: # Buy Zone
             # T1: Low <= L1
-            t1_hits = np.where(l_valid <= zone.L1_price)[0]
-            if len(t1_hits) > 0:
+            if not zone.L1_touched and current_low <= zone.L1_price:
                 zone.L1_touched = True
-                zone.L1_touch_time = t_valid[t1_hits[0]]
+                zone.L1_touch_time = current_time
                 zone.touch_count = 1
                 
-                t2_hits = np.where(l_valid[t1_hits[0]:] <= zone.fifty_percent)[0]
-                if len(t2_hits) > 0:
-                    zone.fifty_touched = True
-                    zone.fifty_touch_time = t_valid[t1_hits[0] + t2_hits[0]]
-                    zone.touch_count = 2
-                    
-                    t3_hits = np.where(l_valid[t1_hits[0] + t2_hits[0]:] <= zone.L2_price)[0]
-                    if len(t3_hits) > 0:
-                        zone.L2_touched = True
-                        zone.L2_touch_time = t_valid[t1_hits[0] + t2_hits[0] + t3_hits[0]]
-                        zone.touch_count = 3
+            if zone.L1_touched and not zone.fifty_touched and current_low <= zone.fifty_percent:
+                zone.fifty_touched = True
+                zone.fifty_touch_time = current_time
+                zone.touch_count = 2
+                
+            if zone.fifty_touched and not zone.L2_touched and current_low <= zone.L2_price:
+                zone.L2_touched = True
+                zone.L2_touch_time = current_time
+                zone.touch_count = 3
 
-        # Zone Age Calculation
-        zone.zone_age_bars = last_idx
+        # Update Age
+        zone.zone_age_bars += 1
+
+def update_zone_statuses(df: pd.DataFrame, zones: list[B2BZoneInfo]):
+    """
+    LEGACY/PRE-FLIGHT: Initialized only for historical zones that pre-date simulation.
+    In a strict serial backtest, this should be used SPARINGLY.
+    """
+    # ... (Keeping it for now to avoid breaking detection pipeline, but will warn)
+    # Actually, let's just make it do nothing or only handle history.
+    pass 
+

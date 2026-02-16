@@ -9,8 +9,8 @@ from core.models.structures import B2BZoneInfo, SignalDirection, DetectionConfig
 from core.detectors.swing_points import detect_swings
 from core.detectors.breakouts import detect_breakouts
 from core.detectors.b2b_engine import detect_b2b_zones
-from core.detectors.zone_status import update_zone_statuses
-from core.system.timeframe_state import TimeframeState
+from core.detectors.zone_status import update_active_zones
+from core.system.timeframe_mgr import TimeframeState
 from core.strategy.orchestrator import StrategyOrchestrator
 from core.strategy.scanner import SignalScanner, TradeSignal
 from core.execution.trade_manager import TradeManager, Position
@@ -23,6 +23,7 @@ class BacktestConfig:
     start_date: str = "2020-01-01"
     end_date: str = "2020-12-31" # Smoke Test: 1 Year (2020)
     initial_balance: float = 100000.0
+    max_open_positions: int = 100 # V6.0 Risk Governor (Default: High Cap)
 
 class VectorizedBacktester:
     """
@@ -66,8 +67,7 @@ class VectorizedBacktester:
                     df['time'] = pd.to_datetime(df['time'])
                     df.set_index('time', inplace=True)
                 
-                # Filter by date range
-                df = df[self.cfg.start_date:self.cfg.end_date]
+                # Store FULL data for structural detection context
                 self.data[tf] = df
                 print(f"Loaded {tf}: {len(df)} bars")
             except Exception as e:
@@ -94,9 +94,9 @@ class VectorizedBacktester:
             
             swings = detect_swings(df_reset, det_cfg)
             # breakouts = detect_breakouts(df_reset, swings, det_cfg) # Redundant: B2B engine handles this
-            zones = detect_b2b_zones(df_reset, swings, det_cfg)
+            zones = detect_b2b_zones(df_reset, swings, tf=tf, config=det_cfg)
             
-            update_zone_statuses(df_reset, zones)
+            # update_zone_statuses(df_reset, zones) # DELETED: Now handled incrementally in simulation loop
             
             self.zones[tf] = zones
             print(f"[{tf}] Detected {len(zones)} zones")
@@ -124,10 +124,12 @@ class VectorizedBacktester:
         pointers = {tf: 0 for tf in self.zones}
         active_zones = {tf: [] for tf in self.zones}
         
-        total_bars = len(driver_data)
+        # Slice only the time period specified for the simulation
+        sim_data = driver_data[self.cfg.start_date:self.cfg.end_date]
+        total_bars = len(sim_data)
         
         # Optimization: use itertuples for 10x speed over iterrows
-        for i, row in enumerate(driver_data.itertuples()):
+        for i, row in enumerate(sim_data.itertuples()):
             current_time = row.Index
             if i % 1000 == 0: 
                 print(f"Processing... {i}/{total_bars}")
@@ -138,31 +140,29 @@ class VectorizedBacktester:
             # 1. Update Timeframe State
             self.tf_state.sync_to(current_time)
             
-            # 2. Update Active Zones (Incremental)
-            simulation_snapshot = []
-            
+            # 2. Update Active Zones (Strict Serial)
             for tf, zones in self.zones.items():
-                # A. Add New Zones
+                # A. Add New Zones (Point of Confirmation)
                 while pointers[tf] < len(zones):
                     candidate = zones[pointers[tf]]
                     if candidate.zone_created_time <= current_time:
                         active_zones[tf].append(candidate)
                         pointers[tf] += 1
                     else:
-                        break # Logic is sorted by creation time
+                        break 
                 
-                # B. Prune Dead Zones (In-Place Filter)
-                # Keep if NOT invalidated OR invalidation is in FUTURE
-                # (Re-creating list is often faster than remove() in loop)
-                active_zones[tf] = [
-                    z for z in active_zones[tf] 
-                    if not (z.is_invalidated and z.invalidation_time is not None and z.invalidation_time <= current_time)
-                ]
+            # B. Update Status based on CURRENT prices (No Lookahead)
+            all_active = [z for tf_list in active_zones.values() for z in tf_list]
+            update_active_zones(row.low, row.high, row.close, current_time, all_active)
+
+            # C. Prune Invalidated Zones
+            for tf in active_zones:
+                active_zones[tf] = [z for z in active_zones[tf] if z.is_valid]
                 
-                simulation_snapshot.extend(active_zones[tf])
+            simulation_snapshot = [z for tf_list in active_zones.values() for z in tf_list]
             
             # 3. Feed the Orchestrator (Using pre-grouped dict)
-            self.orchestrator.update_flow_state(active_zones)
+            self.orchestrator.update_flow_state(active_zones, current_price, current_time)
             
             # Create a flat snapshot for the scanner (which still needs a list)
             simulation_snapshot = [z for zones in active_zones.values() for z in zones]
@@ -172,6 +172,8 @@ class VectorizedBacktester:
             signals = self.scanner.scan(
                 self.cfg.symbol, 
                 simulation_snapshot, 
+                row.low, 
+                row.high,
                 current_price, 
                 current_time,
                 active_ids
