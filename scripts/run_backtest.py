@@ -11,14 +11,22 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from simulation.engine.vectorized_backtester import VectorizedBacktester, BacktestConfig
 from simulation.engine.reporting import generate_tearsheet
 
+import argparse
+
 def main():
+    parser = argparse.ArgumentParser(description="Run SIGMA Backtest")
+    parser.add_argument("--test-id", type=str, default="debug_run", help="ID for the test run (folder name)")
+    args = parser.parse_args()
+    
+    test_id = args.test_id
+    
     # Configure logging
     logging.basicConfig(level=logging.INFO)
     
-    # 1. Setup Configuration (Phase 10-B: Full Governor)
+    # 1. Setup Configuration (Phase 10-C: Redundancy Filter)
     config = BacktestConfig(
         symbol="BTCUSDT",
-        timeframes=["MN1", "W1", "D1", "H4", "H1", "M30"], # RE-ENABLED M30 (Alpha) + Governor (Shield)
+        timeframes=["MN1", "W1", "D1", "H4", "H1", "M30"], # Full Alpha + Governor + Redundancy
         start_date="2018-01-01", # Warmup
         end_date="2022-12-31", # 3 Year In-Sample
         initial_balance=10000.0,
@@ -37,7 +45,7 @@ def main():
     tester.run_detection_pipeline()
     
     # 5. Execute Simulation
-    print("🎯 Running Strict Serial Backtest (Phase 10-B: Risk Governor Max 10)...")
+    print("🎯 Running Strict Serial Backtest (Phase 10-C: Redundancy Filter)...")
     tester.run_simulation()
     
     # 6. Report Results
@@ -58,7 +66,7 @@ def main():
         return
         
     # Standard CSV Output for QuantStats
-    reports_dir = Path("research/reports/3rd_IS_test") # ISOLATED OUTPUT
+    reports_dir = Path(f"research/reports/{test_id}") # ISOLATED OUTPUT
     reports_dir.mkdir(parents=True, exist_ok=True)
     
     trade_df = pd.DataFrame([vars(t) for t in ledger])
@@ -76,7 +84,7 @@ def main():
         
         # A. QuantStats
         equity_path = str(reports_dir / "equity_curve.csv")
-        output_path = str(reports_dir / "tearsheet_2020_2022.html")
+        output_path = str(reports_dir / "tearsheet_Phase10C_Redundancy.html")
         generate_tearsheet(equity_path, output_path)
         
         # B. Fractal Metrics (B2B Edge)

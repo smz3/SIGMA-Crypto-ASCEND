@@ -1,81 +1,52 @@
 
 import pandas as pd
 import numpy as np
-import os
 
-def calculate():
-    equity_path = 'research/reports/equity_curve_serial.csv'
-    trade_path = 'research/reports/trade_log_serial.csv'
-    
-    if not os.path.exists(equity_path) or not os.path.exists(trade_path):
-        print("Error: Files not found.")
-        return
+def calculate_metrics(equity_path):
+    print(f"📊 Analyzing Metrics: {equity_path}")
+    try:
+        df = pd.read_csv(equity_path)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df = df.set_index('timestamp')
+        
+        # Calculate Drawdown
+        df['peak'] = df['equity'].cummax()
+        df['drawdown'] = (df['equity'] - df['peak']) / df['peak']
+        max_dd = df['drawdown'].min()
+        
+        # Calculate CAGR
+        start_equity = df['equity'].iloc[0]
+        end_equity = df['equity'].iloc[-1]
+        days = (df.index[-1] - df.index[0]).days
+        years = days / 365.25
+        cagr = (end_equity / start_equity) ** (1 / years) - 1
+        
+        # Calculate Sharpe (Assume Risk Free = 0 for simplicity in crypto)
+        df['returns'] = df['equity'].pct_change()
+        mean_return = df['returns'].mean()
+        std_return = df['returns'].std()
+        # Annualized Sharpe (assuming daily data? No, equity curve is per-trade or per-tick?)
+        # VectorizedBacktester equity curve is updated per manage_positions call (per candle/tick).
+        # So we should resample to Daily for standardized Sharpe.
+        
+        daily_df = df['equity'].resample('D').last().dropna()
+        daily_returns = daily_df.pct_change()
+        sharpe = (daily_returns.mean() / daily_returns.std()) * np.sqrt(365)
+        
+        print("\n=== PHASE 10-C RESULTS ===")
+        print(f"Start Date: {df.index[0]}")
+        print(f"End Date:   {df.index[-1]}")
+        print(f"Start Equity: ${start_equity:,.2f}")
+        print(f"End Equity:   ${end_equity:,.2f}")
+        print("-" * 30)
+        print(f"CAGR:       {cagr*100:.2f}%")
+        print(f"Max DD:     {max_dd*100:.2f}%")
+        print(f"Sharpe:     {sharpe:.2f}")
+        print("-" * 30)
+        
+    except Exception as e:
+        print(f"❌ Error calculating metrics: {e}")
 
-    # Load Equity
-    print(f"Reading {equity_path}...")
-    df = pd.read_csv(equity_path)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    df.set_index('timestamp', inplace=True)
-    equity = df['equity']
-
-    # Basic Metrics
-    initial_equity = 10000 
-    final_equity = equity.iloc[-1]
-    total_return = (final_equity - initial_equity) / initial_equity * 100
-
-    # Drawdown
-    roll_max = equity.cummax()
-    drawdown = (equity - roll_max) / roll_max
-    max_dd = drawdown.min() * 100
-
-    # Annualized Metrics (Resample to Daily)
-    daily_equity = equity.resample('D').last().ffill()
-    daily_returns = daily_equity.pct_change().dropna()
-    
-    ann_return = daily_returns.mean() * 365 * 100
-    sharpe = (daily_returns.mean() / daily_returns.std()) * np.sqrt(365) if daily_returns.std() != 0 else 0
-
-    # Sortino
-    downside_returns = daily_returns[daily_returns < 0]
-    downside_std = downside_returns.std() * np.sqrt(365)
-    sortino = (daily_returns.mean() * 365) / downside_std if downside_std != 0 else 0
-
-    # Trade Metrics
-    print(f"Reading {trade_path}...")
-    trades = pd.read_csv(trade_path)
-    total_trades = len(trades)
-    
-    # Use 'pnl' instead of 'pnl_money'
-    wins = trades[trades['pnl'] > 0]
-    win_rate = len(wins) / total_trades * 100 if total_trades > 0 else 0
-    
-    gross_profit = wins['pnl'].sum()
-    losses = trades[trades['pnl'] <= 0]
-    gross_loss = abs(losses['pnl'].sum())
-    profit_factor = gross_profit / gross_loss if gross_loss != 0 else float('inf')
-    
-    avg_win = wins['pnl'].mean() if len(wins) > 0 else 0
-    avg_loss = abs(losses['pnl'].mean()) if len(losses) > 0 else 0
-    expectancy_ratio = (win_rate/100 * avg_win) - ((1 - win_rate/100) * avg_loss)
-
-    print("\n" + "="*40)
-    print("📊 SIGMA 2020 PERFORMANCE BREAKDOWN")
-    print("="*40)
-    print(f"Initial Capital:   $10,000.00")
-    print(f"Final Equity:      ${final_equity:,.2f}")
-    print(f"Total Return:      {total_return:.2f}%")
-    print(f"Max Drawdown:      {max_dd:.2f}%")
-    print("-" * 40)
-    print(f"Annualized Sharpe: {sharpe:.2f}")
-    print(f"Annualized Sortino: {sortino:.2f}")
-    print("-" * 40)
-    print(f"Total Trades:      {total_trades}")
-    print(f"Win Rate:          {win_rate:.2f}%")
-    print(f"Profit Factor:     {profit_factor:.2f}")
-    print(f"Avg Win:           ${avg_win:.2f}")
-    print(f"Avg Loss:          -${avg_loss:.2f}")
-    print(f"Expec. Per Trade:  ${expectancy_ratio:.2f}")
-    print("="*40)
-
-if __name__ == '__main__':
-    calculate()
+if __name__ == "__main__":
+    path = "research/reports/4th_IS_test/equity_curve.csv"
+    calculate_metrics(path)

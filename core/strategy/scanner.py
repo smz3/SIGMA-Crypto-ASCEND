@@ -15,6 +15,7 @@ class TradeSignal:
     tp_price: float
     reason: str
     timestamp: pd.Timestamp
+    origin_id: str = "" # V6.0 Redundancy Filter
 
 class SignalScanner:
     """
@@ -66,8 +67,8 @@ class SignalScanner:
                 # BEARISH zone (Supply): We check if bar HIGH hit the core.
                 probe = bar_low if z.direction == SignalDirection.BULLISH else bar_high
                 
-                allowed, reason, target = self.brain.is_trade_allowed(
-                    z.timeframe, z.direction, z, current_close, probe_price=probe
+                allowed, reason, target, origin_id = self.brain.is_trade_allowed(
+                    z.timeframe, z.direction, z, current_close, current_time, probe_price=probe, trigger_type=trigger_type
                 )
                 
                 if allowed:
@@ -87,7 +88,8 @@ class SignalScanner:
                         structure_sl=z.L2_price, # Always Structure L2
                         tp_price=target,
                         reason=f"{reason} [{trigger_type}]",
-                        timestamp=current_time
+                        timestamp=current_time,
+                        origin_id=origin_id # V6.0 Redundancy
                     )
                     signals.append(sig)
                 

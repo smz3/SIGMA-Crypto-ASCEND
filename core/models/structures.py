@@ -144,6 +144,7 @@ class FlowState:
     magnet_dir: SignalDirection = SignalDirection.NONE
     details_magnet_price: float = 0.0
     details_magnet_L2: float = 0.0
+    magnet_touch_time: pd.Timestamp = pd.Timestamp.min # V6.5 Freshness Baseline for Faders
     magnet_fifty_touched: bool = False
     magnet_L2_touched: bool = False
     is_magnet_extreme: bool = False # V5.8
@@ -156,10 +157,14 @@ class FlowState:
     anchor_is_traded: bool = False # V5.7: Safety Trigger
     is_siege_active: bool = False # V5.5
     is_valid: bool = False
+    
+    # V6.7: Inertial Flow (Structural Memory)
+    latch_dir: SignalDirection = SignalDirection.NONE
+    
     last_update_time: pd.Timestamp = pd.Timestamp.min
 
     def reset(self):
-        """Resets the state to initial values."""
+        """Resets the state to initial values (keeps the latch)."""
         self.origin_id = ""
         self.origin_dir = SignalDirection.NONE
         self.origin_touch_time = pd.Timestamp.min
@@ -179,6 +184,7 @@ class FlowState:
         self.anchor_is_traded = False
         self.is_siege_active = False
         self.is_valid = False
+        # V6.7: Latch persists through resets to maintain the "Storyline"
         self.last_update_time = pd.Timestamp.min
 
 

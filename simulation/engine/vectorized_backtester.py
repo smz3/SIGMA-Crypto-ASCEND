@@ -184,12 +184,21 @@ class VectorizedBacktester:
                 self.trade_manager.execute(sig)
                 
             # 6. Manage Open Positions
-            self.trade_manager.manage_positions(
+            closed_trades = self.trade_manager.manage_positions(
                 row.low, 
                 row.high, 
                 current_price, 
                 current_time
             )
+            
+            # Efficiency Governor Feedback Loop (Phase 12B)
+            # If a trade loses, we trigger both Spatial and Temporal muting.
+            for trade in closed_trades:
+                if trade.pnl < 0:
+                    # 1. Spatial Muting (Pillar 0: Redundancy Filter)
+                    self.orchestrator.blacklist_origin(trade.origin_id, trade.tf)
+                    # 2. Temporal Muting (Pillar 2: Temporal Muter)
+                    self.orchestrator.report_trade_failure(trade.tf, trade.direction, current_time)
             
         print("Simulation Complete. Force-closing remaining positions...")
         self.trade_manager.force_close_all(current_price, current_time)
@@ -205,14 +214,14 @@ class VectorizedBacktester:
         # 1. Save Closed Trades Ledger
         if trades:
             df_trades = pd.DataFrame([vars(t) for t in trades])
-            df_trades.to_csv("research/reports/trade_log.csv", index=False)
-            print("Trade Log saved to research/reports/trade_log.csv")
+            df_trades.to_csv("research/reports/4th_IS_test/trade_log.csv", index=False)
+            print("Trade Log saved to research/reports/4th_IS_test/trade_log.csv")
             
         # 2. Save Equity Curve
         if history:
             df_equity = pd.DataFrame(history)
-            df_equity.to_csv("research/reports/equity_curve.csv", index=False)
-            print("Equity Curve saved to research/reports/equity_curve.csv")
+            df_equity.to_csv("research/reports/4th_IS_test/equity_curve.csv", index=False)
+            print("Equity Curve saved to research/reports/4th_IS_test/equity_curve.csv")
 
 if __name__ == "__main__":
     # Smoke Test

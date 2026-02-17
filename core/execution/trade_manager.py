@@ -17,6 +17,8 @@ class Position:
     comment: str
     zone_id: int # Track which zone opened this
     be_active: bool = False # Track if Break-Even was already triggered
+    origin_id: str = "" # V6.0 Redundancy
+    tf: str = ""        # V6.0 Redundancy
 
 @dataclass
 class ClosedTrade:
@@ -31,6 +33,8 @@ class ClosedTrade:
     close_time: pd.Timestamp
     reason: str        # Exit Reason (SL/TP)
     entry_reason: str # Original Entry Reason (e.g. D1 Flow)
+    origin_id: str = "" # V6.0 Redundancy
+    tf: str = ""        # V6.0 Redundancy
 
 class TradeManager:
     """
@@ -80,16 +84,21 @@ class TradeManager:
             open_time=signal.timestamp,
             comment=f"{signal.tf}#{signal.zone_id} {signal.reason}",
             zone_id=signal.zone_id,
-            be_active=False
+            be_active=False,
+            origin_id=signal.origin_id,
+            tf=signal.tf
         )
         self.positions.append(pos)
         self._ticket_counter += 1
         
-    def manage_positions(self, low: float, high: float, current_price: float, current_time: pd.Timestamp):
+    def manage_positions(self, low: float, high: float, current_price: float, current_time: pd.Timestamp) -> List[ClosedTrade]:
         """
         Check SL/TP and Trailing Stops using High/Low for triggers.
+        Returns list of trades closed this tick.
         """
         still_open = []
+        just_closed = []
+        
         for pos in self.positions:
             closed = False
             exit_price = 0.0
@@ -151,7 +160,7 @@ class TradeManager:
                 
                 self.account_balance += trade_pnl
                 
-                self.ledger.append(ClosedTrade(
+                closed_trade = ClosedTrade(
                     ticket=pos.ticket,
                     symbol=pos.symbol,
                     direction=pos.direction,
@@ -162,8 +171,12 @@ class TradeManager:
                     open_time=pos.open_time,
                     close_time=current_time,
                     reason=reason,
-                    entry_reason=pos.comment
-                ))
+                    entry_reason=pos.comment,
+                    origin_id=pos.origin_id, # V6.0
+                    tf=pos.tf                # V6.0
+                )
+                self.ledger.append(closed_trade)
+                just_closed.append(closed_trade)
             else:
                 still_open.append(pos)
                 
@@ -182,9 +195,12 @@ class TradeManager:
             'timestamp': current_time,
             'equity': self.account_balance + floating_pnl
         })
+        
+        return just_closed
 
-    def force_close_all(self, current_price: float, current_time: pd.Timestamp):
+    def force_close_all(self, current_price: float, current_time: pd.Timestamp) -> List[ClosedTrade]:
         """Force-close all open positions at current market price."""
+        closed_trades = []
         for pos in self.positions:
             if pos.direction == 'BULLISH':
                 trade_pnl = (current_price - pos.entry_price) * pos.size
@@ -192,7 +208,7 @@ class TradeManager:
                 trade_pnl = (pos.entry_price - current_price) * pos.size
             
             self.account_balance += trade_pnl
-            self.ledger.append(ClosedTrade(
+            closed_trade = ClosedTrade(
                 ticket=pos.ticket,
                 symbol=pos.symbol,
                 direction=pos.direction,
@@ -203,8 +219,15 @@ class TradeManager:
                 open_time=pos.open_time,
                 close_time=current_time,
                 reason="Forced Close (End of Sim)",
-                entry_reason=pos.comment
-            ))
+                entry_reason=pos.comment,
+                origin_id=pos.origin_id, # V6.0
+                tf=pos.tf                # V6.0
+            )
+            self.ledger.append(closed_trade)
+            closed_trades.append(closed_trade)
+            
+        self.positions = []
+        return closed_trades
         self.positions = []
         # Update final equity
         self.equity_history.append({'timestamp': current_time, 'equity': self.account_balance})
