@@ -6,7 +6,7 @@ A professional-grade quantitative strategy engine for Crypto Perpetuals, porting
 - **`core/`**: Alpha Engine (B2B Detectors, Russian Doll Filters).
 - **`data/`**: CCXT-based ingestion for Binance Futures (Price, Funding, Liquidations).
 - **`simulation/`**: Custom Vectorized Backtester with walk-forward analysis.
-- **`dashboard/`**: Live monitoring via SIGMA Quant (Next.js).
+- **`dashboard/`**: Live monitoring via [SIGMA Quant](https://sigma-quant.pages.dev) (Next.js).
 
 ## 🧪 Methodology: "First Principles Quant"
 This strategy exploits **Microstructure Inefficiency** and **Liquidity Stress**. We focus on:
