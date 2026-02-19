@@ -16,7 +16,7 @@ graph TD
     C --> D["BSA Authentication (Bilateral Structural Anchors)"]
     D --> E["Recursive Gating Orchestrator (SAMTC)"]
     E --> F["Operational Safety Gaskets (Elasticity/Temporal)"]
-    F --> G["Institutional Execution"]
+    F --> G["Validated Signal"]
 ```
 
 ### Core Components
