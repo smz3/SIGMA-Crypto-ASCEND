@@ -1,11 +1,11 @@
-# SIGMA-Crypto-ASCEND 🚀🛡️📈
+# SIGMA-Crypto-ASCEND
 
 **State Aware Multi Temporal Consensus (SAMTC) Engine**  
-*A professional-grade quantitative execution framework for Crypto Perpetuals, porting proprietary fractal logic into a vectorized high-resolution Python environment.*
+*A quantitative execution framework for Crypto Perpetuals, implementing fractal logic within a vectorized Python environment.*
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 The SIGMA engine is built on a **Recursive Gating Hierarchy**, designed to filter non-stationary noise and capture institutional liquidity search operations.
 
@@ -27,22 +27,22 @@ graph TD
 
 ---
 
-## 🧪 Methodology: "The Physics of Alpha"
+## Methodology: "The Physics of Alpha"
 
 The strategy operates on the principle of **Structural Imbalance Recognition** rather than simple pattern matching.
 
 ### 1. Bilateral Structural Anchors (BSA)
-Model price as a directed search operation between authenticated anchors. A BSA is not a "zone"—it is an institutional fingerprint defined by the **3-pass/5-pointer geometric limit**.
+Model price as a directed search operation between authenticated anchors. A BSA is not a "zone"—it represents the structural state defined by the **3-pass/5-pointer geometric limit**.
 
 ### 2. Multi-Temporal Consensus (SAMTC)
-Execution is only authorized when the **Fractal Storyline** is in alignment across specific timeframes (MN1 → W1 → D1). This provides a "Russian Doll" security shield.
+Execution is only authorized when the **Fractal Storyline** is in alignment across specific timeframes (MN1 → W1 → D1). This provides a **Recursive Gating Logic** shield.
 
 ### 3. Siege Audit (T0-T3)
-Dynamic tracking of anchor degradation. The system differentiates between "Virgin" liquidity (T0) and "Exhausted" structural gaskets (T3), preventing entries into decayed signals.
+Dynamic tracking of anchor degradation. The system differentiates between **Untested** liquidity (T0) and "Exhausted" structural gaskets (T3), preventing entries into decayed signals.
 
 ---
 
-## 📊 Performance Attribution
+## Performance Attribution
 
 Verified against 7 years of multi-regime data (2018–2025):
 - **Max Alpha (Test 9G)**: CAGR 432.3% | Sharpe 1.90
@@ -51,7 +51,7 @@ Verified against 7 years of multi-regime data (2018–2025):
 
 ---
 
-## 🚀 Deployment & Auditing
+## Deployment & Auditing
 
 ### Environment Setup
 ```bash
