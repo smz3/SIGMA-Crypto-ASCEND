@@ -68,4 +68,4 @@ The full mathematical basis for this engine is detailed in the primary strategy 
 [**SAMTC_SR: State Aware Multi Temporal Consensus**](file:///research/thesis/SAMTC_SR.pdf)
 
 ---
-*Created by Syafiq M. Zin for the ASCEND Quant Researcher Strategy Builder Submission.*
+*Created for the ASCEND Quant Researcher Strategy Builder Submission.*
