@@ -98,12 +98,12 @@ The market is modeled as a **battlefield** with 3 authority tiers:
 
 ### Origin-Magnet Model (V2.0)
 
-| Concept | Definition |
-|---|---|
-| **Origin** | Zone where price most recently bounced FROM (Point A, WITH-TREND) |
-| **Magnet** | First opposing zone ahead of price (Point B, the target) |
-| **Outpost** | New same-direction zone formed during trend (forward base) |
-| **Roadblock** | Opposing zone that may block the path |
+| Concept       | Definition                                                        |
+|---            |---                                                                |
+| **Origin**    | Zone where price most recently bounced FROM (Point A, WITH-TREND) |
+| **Magnet**    | First opposing zone ahead of price (Point B, the target)          |
+| **Outpost**   | New same-direction zone formed during trend (forward base)        |
+| **Roadblock** | Opposing zone that may block the path                             |
 
 Roles are **FIXED** — they only change on new structure formation, zone invalidation, or full retracement completion. Touching a zone does NOT swap roles.
 
@@ -120,11 +120,11 @@ MN1: Origin @ 1500 (BUY) ──────────► Magnet @ 1700 (SELL)
 
 ### 3 Levels of Trap Selection (FFT Logic)
 
-| Level | Mode | Requirement | Targeting | Goal |
-|---|---|---|---|---|
-| **1** | **Strict** | Nested inside Origin L1-L2 | Magnet L1/L2 | Defensive Entry |
-| **2** | **Free Flow** | Post-Outpost Touch only | Magnet L1/L2 | Momentum Chase |
-| **3** | **Discovery** | Post-Outpost + No Magnet | Trailing Stop (TP=0) | Blue Sky Extraction |
+| Level         | Mode          | Requirement                | Targeting     | Goal                         |
+|---            |---            |---                         |---            |---                           |
+| **1**         | **Strict**    | Nested inside Origin L1-L2 | Magnet L1/L2  | Defensive Entry              |
+| **2**         | **Free Flow** | Post-Outpost Touch only    | Magnet L1/L2  | Momentum Chase               |
+| **3**         | **Discovery** | Post-Outpost + No Magnet   | Trailing Stop (TP=0) | Blue Sky Extraction   |
 
 **Freshness Rule:** Trap must be created AFTER the narrative zone was TOUCHED. `Trap.CreatedTime > NarrativeZone.L1_TouchTime`. Prevents "catching falling knives."
 
@@ -153,11 +153,11 @@ Key blocks in `StrategyOrchestrator.mqh`:
 
 ### V5.9 Fractal Hierarchy — 3-Tier Recursive Engine
 
-| Tier | Category | Timeframes | Role |
-|---|---|---|---|
-| **Tier 1** | Macro Generals | MN1, W1, D1 | Strategy: Global bias + hunting grounds |
-| **Tier 2** | Micro Officers | H4, H1, M30 | Timing: Session cycles + discovery map |
-| **Tier 3** | Precision Snipers | M15, M5, M1 | Execution: Structural wick triggers |
+| Tier       | Category          | Timeframes   | Role                                    |
+|---         |---                |---           |---                                      |
+| **Tier 1** | Macro Generals    | MN1, W1, D1  | Strategy: Global bias + hunting grounds |
+| **Tier 2** | Micro Officers    | H4, H1, M30  | Timing: Session cycles + discovery map |
+| **Tier 3** | Precision Snipers | M15, M5, M1  | Execution: Structural wick triggers     |
 
 **Chain of Trust:** A Sniper doesn't check the General; it only trusts its immediate Officer. Symmetric recursive handshake at each level.
 

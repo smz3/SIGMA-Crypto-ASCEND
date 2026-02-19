@@ -54,6 +54,7 @@ class RawBreakoutInfo:
     broken_swing_type: SwingType = SwingType.NONE
     impulse_start_price: float = 0.0
     breakout_bar_index: int = -1
+    broken_swing_bar_index: int = -1
 
     def is_valid(self) -> bool:
         return self.direction != SignalDirection.NONE and self.broken_swing_time is not None
@@ -96,6 +97,8 @@ class B2BZoneInfo:
     parent_count: int = 0
     tf_rank: int = -1
 
+    first_barrier_bar_index: int = -1
+    second_barrier_bar_index: int = -1
     created_bar_index: int = -1
     zone_age_bars: int = 0
     touch_count: int = 0

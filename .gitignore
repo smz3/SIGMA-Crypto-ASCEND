@@ -6,6 +6,7 @@ __pycache__/
 venv/
 env/
 .env
+.pytest_cache/
 
 # Data
 data/raw/*
@@ -20,3 +21,21 @@ data/processed/*
 # OS
 .DS_Store
 Thumbs.db
+
+# LaTeX Build Noise
+research/thesis/*.aux
+research/thesis/*.log
+research/thesis/*.out
+research/thesis/*.toc
+research/thesis/*.synctex.gz
+research/thesis/*.fdb_latexmk
+research/thesis/*.fls
+research/archive/*.aux
+research/archive/*.log
+research/archive/*.out
+research/archive/*.toc
+
+# Dev Artifacts
+*.md.resolved
+ASCEND_Compliance_Audit_Portfolio.md.resolved
+ASCEND_Job_Alignment_Checklist.md.resolved

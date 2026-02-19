@@ -76,6 +76,7 @@ def detect_breakouts(
                 broken_swing_close_price=swing.close_price,
                 broken_swing_type=swing.type,
                 breakout_bar_index=bar_idx,
+                broken_swing_bar_index=swing.bar_index,
             ))
 
     return breakouts

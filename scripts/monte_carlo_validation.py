@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 def run_monte_carlo(log_path, iterations=10000, initial_capital=10000):
     df = pd.read_csv(log_path)
@@ -64,13 +65,17 @@ def run_monte_carlo(log_path, iterations=10000, initial_capital=10000):
     print(f"Probability of Ruin (DD > 90%): {(np.sum(results_mdd < -90) / iterations * 100):.2f}%")
 
     # --- VISUALIZATION ---
-    output_dir = r'C:\Users\User\.gemini\antigravity\brain\5072d2d6-41eb-4371-9019-085a6c74e69f'
+    # Syncing to both artifact and research report directories
+    output_dirs = [
+        r'C:\Users\User\.gemini\antigravity\brain\6ca37f70-a9f2-4ef8-82ae-d04457d3dae3',
+        r'c:\Users\User\Desktop\SIGMA System Anti Gravity\SIGMA-Crypto-ASCEND\research\reports'
+    ]
     import matplotlib
     matplotlib.use('Agg')
     
     # 1. Equity Fan Chart (Spaghetti Plot)
     plt.figure(figsize=(12, 6))
-    plt.title("B2B Alpha Sentinel: Monte Carlo Equity Fan (2500 Iterations)")
+    plt.title(f"B2B Alpha Sentinel: Monte Carlo Equity Fan ({iterations} Iterations)")
     
     # Run a few sample paths for the visual
     for _ in range(100):
@@ -84,7 +89,9 @@ def run_monte_carlo(log_path, iterations=10000, initial_capital=10000):
     plt.xlabel("Trade Number")
     plt.legend()
     plt.grid(True, alpha=0.3)
-    plt.savefig(f"{output_dir}\\mc_equity_fan.png", dpi=150)
+    for d in output_dirs:
+        if os.path.exists(d):
+            plt.savefig(os.path.join(d, "mc_equity_fan.png"), dpi=150)
     plt.close()
 
     # 2. Max Drawdown Histogram
@@ -96,10 +103,12 @@ def run_monte_carlo(log_path, iterations=10000, initial_capital=10000):
     plt.xlabel("Max Drawdown (%)")
     plt.ylabel("Frequency")
     plt.legend()
-    plt.savefig(f"{output_dir}\\mc_drawdown_dist.png", dpi=150)
+    for d in output_dirs:
+        if os.path.exists(d):
+            plt.savefig(os.path.join(d, "mc_drawdown_dist.png"), dpi=150)
     plt.close()
     
     print(f"\n[SUCCESS] Visualizations saved to artifact directory.")
 
 if __name__ == "__main__":
-    run_monte_carlo(r'research\reports\Test_13A_OOS_AlphaSentinel\trade_log.csv')
+    run_monte_carlo(r'research\reports\OOS\Test_13A_OOS_AlphaSentinel\trade_log.csv')

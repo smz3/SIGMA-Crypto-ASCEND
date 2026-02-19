@@ -1,0 +1,12 @@
+ccxt>=4.0.0
+pandas>=1.5.0
+numpy>=1.23.0
+matplotlib>=3.6.0
+seaborn>=0.12.0
+scipy>=1.9.0
+pytest>=7.0.0
+plotly>=5.10.0
+supabase>=1.0.0
+python-dotenv>=1.0.0
+framer-motion>=10.0.0  # Optional if used in dashboard integration
+lucide-react>=0.200.0  # Optional if used in dashboard integration
